@@ -209,23 +209,26 @@ class VideoCompressService : Service() {
 
     /**
      * 進捗ポーリング（Media3 Transformer から進捗取得）
+     * Transformer のメソッドは全てメインスレッドからアクセスする必要がある
      */
     private fun startProgressPolling(transformer: Transformer) {
         progressPollingJob?.cancel()
         val progressHolder = ProgressHolder()
 
-        progressPollingJob = serviceScope.launch(Dispatchers.Default) {
+        progressPollingJob = serviceScope.launch(Dispatchers.Main) {
             while (isActive) {
-                val progressState = transformer.getProgress(progressHolder)
-                if (progressState == Transformer.PROGRESS_STATE_AVAILABLE) {
-                    val progress = progressHolder.progress.coerceIn(0, 100)
-                    withContext(Dispatchers.Main) {
+                try {
+                    val progressState = transformer.getProgress(progressHolder)
+                    if (progressState == Transformer.PROGRESS_STATE_AVAILABLE) {
+                        val progress = progressHolder.progress.coerceIn(0, 100)
                         _compressionStatus.value = CompressionStatus.Compressing(
                             progressPercent = progress,
                             currentStep = "ハードウェア圧縮中 ($progress%)"
                         )
                         updateProgressNotification(progress, "圧縮中: $progress%")
                     }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to get progress: ${e.message}")
                 }
                 delay(300)
             }
