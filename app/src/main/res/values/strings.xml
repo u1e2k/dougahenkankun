@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">動画変換くん</string>
+    <string name="notification_channel_name">動画圧縮タスク</string>
+    <string name="notification_channel_desc">バックグラウンドでの動画圧縮進捗状況を通知します</string>
+</resources>
